@@ -7,8 +7,6 @@
  */
 
 static mouse* mouse_ptr = nullptr;
-
-/* bug: spamming breaks everything */
 static auto last_click = std::chrono::steady_clock::now();
 
 LRESULT CALLBACK mouse_proc(int n_code, WPARAM w_param, LPARAM l_param) {
@@ -22,7 +20,7 @@ LRESULT CALLBACK mouse_proc(int n_code, WPARAM w_param, LPARAM l_param) {
                     last_click = now;
                     if (mouse_ptr) {
                         std::thread([] {
-                                mouse_ptr->relative_move_precise(4524.300268989501, 60, 1);
+                                mouse_ptr->relative_move_precise(4524.300268989501, 0, 3000, 0, true);
                         }).detach();
                     }
                 }

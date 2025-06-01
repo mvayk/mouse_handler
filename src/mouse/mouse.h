@@ -24,24 +24,46 @@ struct mouse {
         }
     }
 
-    void relative_move_precise(double total_dx, int steps, int delay_ms = 1) {
+    void relative_move_precise(double total_dx, double total_dy, int steps, int delay_ms = 1, bool use_easing = true) {
+        double accum_dx = 0.0;
+        double accum_dy = 0.0;
+
         INPUT input = {};
         input.type = INPUT_MOUSE;
         input.mi.dwFlags = MOUSEEVENTF_MOVE;
+        input.mi.mouseData = 0;
+        input.mi.dwExtraInfo = GetMessageExtraInfo();
+        input.mi.time = 0;
 
-        double dx_per_step = total_dx / steps;
-        double dx_accum = 0.0;
+        for (int i = 1; i <= steps; ++i) {
+            double t = static_cast<double>(i) / steps;
 
-        for (int i = 0; i < steps; ++i) {
-            dx_accum += dx_per_step;
+            double eased_t = use_easing ? (0.5 - 0.5 * cos(t * 3.14159265358979323846)) : t;
 
-            int move_dx = static_cast<int>(std::round(dx_accum));
-            dx_accum -= move_dx;
+            double target_dx = total_dx * eased_t;
+            double target_dy = total_dy * eased_t;
 
-            input.mi.dx = move_dx;
-            input.mi.dy = 0;
-            SendInput(1, &input, sizeof(INPUT));
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+            double prev_dx = total_dx * (use_easing ? (0.5 - 0.5 * cos((i - 1.0) / steps * 3.14159265358979323846)) : (i - 1.0) / steps);
+            double prev_dy = total_dy * (use_easing ? (0.5 - 0.5 * cos((i - 1.0) / steps * 3.14159265358979323846)) : (i - 1.0) / steps);
+
+            accum_dx += (target_dx - prev_dx);
+            accum_dy += (target_dy - prev_dy);
+
+            int move_dx = static_cast<int>(accum_dx);
+            int move_dy = static_cast<int>(accum_dy);
+
+            accum_dx -= move_dx;
+            accum_dy -= move_dy;
+
+            if (move_dx != 0 || move_dy != 0) {
+                input.mi.dx = move_dx;
+                input.mi.dy = move_dy;
+                SendInput(1, &input, sizeof(INPUT));
+            }
+
+            if (delay_ms > 0) {
+                Sleep(delay_ms);
+            }
         }
     }
 
