@@ -19,8 +19,9 @@ struct mouse {
     }
 
     ~mouse() {
-        if (user32_dll != 0)
+        if (user32_dll != 0) {
             FreeLibrary(user32_dll);
+        }
     }
 
     void relative_move_precise(double total_dx, int steps, int delay_ms = 1) {
